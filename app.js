@@ -13,8 +13,11 @@ var getToken = require('./utils/index.js').getToken;
 var cache = new LRU({
   maxAge: 604800000
 });
-var YZ_Client;
+var YZ_Client, hasError = false;
 var YZToken = '';
+const client_id = '';
+const client_secret = '';
+const kdt_id = '';
 // 获取token并初始化有赞请求客服端
 getYZToken();
 
@@ -44,7 +47,7 @@ app.use('/users', users);
 // 格式 /^youzan.(在这里增加类型).*\.(增加操作)$/
 var API_LIST = {
   // 不要写g，原因见：http://www.365mini.com/page/javascript-regexp-test.htm
-  whiteList: /^youzan\.(item|shop|itemcategories|retail|logistics|regions|pay|ump|salesman|crm|users|scrm|ebiz).*\.(get|search|query|getbycode|count|all|list)$/i
+  whiteList: /^youzan\.(item|trades|shop|itemcategories|retail|logistics|regions?|sold|pay|ump|salesman|crm|users?|scrm|ebiz).*\.(get|search|query|getbycode|count|all|list)$/i
 }
 
 app.use('/api/:url', function(req, res){
@@ -52,7 +55,7 @@ app.use('/api/:url', function(req, res){
     getYZToken();
     return res.send({
       code: 40002,
-      desc: '正在初始化有赞接口'
+      desc: hasError ? hasError : '正在初始化有赞接口'
     })
   }
   if(!API_LIST.whiteList.test(req.params.url)){
@@ -61,7 +64,7 @@ app.use('/api/:url', function(req, res){
       desc: '没有操作权限！'
     })
   }
-  YZ_Client.invoke(req.params.url, '3.0.0', req.method, req.method === 'GET' ? req.query : req.body, undefined).then(function(resp){
+  YZ_Client.invoke(req.params.url, '4.0.0', req.method, req.method === 'GET' ? req.query : req.body, undefined).then(function(resp){
     let dataBody = {
       code: '00001',
       data: null,
@@ -119,10 +122,12 @@ app.use(function(err, req, res, next) {
 
 function getYZToken(){
   // 这里填写后台的设置，kdt_id是授权店铺id
-  getToken('client_id', 'client_secret', 'kdt_id', function(err, token){
+  getToken(client_id, client_secret, kdt_id, function(err, token){
     if(err){
-      return console.log('初始化有赞接口失败')
+      hasError = '初始化有赞接口失败 ' + err.message;
+      return console.log(hasError)
     }
+    hasError = null;
     YZToken = token.access_token;
     cache.set("YZToken", YZToken);
     console.log('初始化有赞接口成功： ', token)

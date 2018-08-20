@@ -1,0 +1,6 @@
+{
+  "apps": [{
+    "name": "YouZanApi",
+    "script": "./bin/www"
+  }]
+}
